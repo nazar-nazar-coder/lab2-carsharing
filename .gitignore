@@ -1,0 +1,12 @@
+.env
+node_modules
+dist
+tls.key
+tls.crt
+
+# local Terraform run without AWS
+infra/local_override.tf
+infra/.terraform/
+infra/terraform.tfstate.d/
+k6-result.txt
+tests/cypress/node_modules/

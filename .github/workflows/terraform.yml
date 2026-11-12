@@ -1,0 +1,65 @@
+name: Terraform
+
+on:
+  pull_request:
+    paths: ["infra/**"]
+  push:
+    branches: [main, lab5-tests]
+    paths: ["infra/**"]
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+defaults:
+  run:
+    working-directory: infra
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false
+      - run: terraform validate
+      - name: Offline plan (local backend, fake credentials)
+        run: |
+          printf 'terraform {\n  backend "local" {}\n}\n' > local_override.tf
+          terraform init -input=false -reconfigure
+          terraform plan -input=false -var offline=true
+
+  plan:
+    # справжній план у pull request – потребує ролі AWS та віддаленого стану
+    if: github.event_name == 'pull_request' && vars.AWS_ROLE_ARN != ''
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - run: terraform init -input=false
+      - run: terraform workspace select -or-create staging
+      - run: terraform plan -input=false -no-color
+
+  apply:
+    # застосування лише після злиття в main та ручного схвалення середовища
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_ROLE_ARN != ''
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: infrastructure
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - run: terraform init -input=false
+      - run: terraform workspace select -or-create staging
+      - run: terraform apply -input=false -auto-approve

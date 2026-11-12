@@ -1,0 +1,490 @@
+{
+  "info": {
+    "name": "CarSharing API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health: identity",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/identity/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "identity",
+            "health"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('service is healthy', () => pm.expect(pm.response.json().status).to.eql('healthy'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health: fleet",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/fleet/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "fleet",
+            "health"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('service is healthy', () => pm.expect(pm.response.json().status).to.eql('healthy'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health: bookings",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/bookings/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "bookings",
+            "health"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('service is healthy', () => pm.expect(pm.response.json().status).to.eql('healthy'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health: payments",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/payments/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "payments",
+            "health"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('service is healthy', () => pm.expect(pm.response.json().status).to.eql('healthy'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fleet: список вільних авто",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/fleet/cars",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "fleet",
+            "cars"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const cars = pm.response.json();",
+              "pm.test('non-empty array', () => pm.expect(cars).to.be.an('array').that.is.not.empty);",
+              "pm.test('required fields', () => cars.forEach(c => pm.expect(c).to.include.keys('brand', 'fuel_type', 'lat', 'lng')));",
+              "pm.collectionVariables.set('carId', cars[0].id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fleet: фільтр за пальним",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/fleet/cars?fuel=electric",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "fleet",
+            "cars"
+          ],
+          "query": [
+            {
+              "key": "fuel",
+              "value": "electric"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('only electric cars', () => pm.response.json().forEach(c => pm.expect(c.fuel_type).to.eql('electric')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Identity: реєстрація",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/identity/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "identity",
+            "register"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"{{email}}\", \"password\": \"Test-Pass-123\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('email', `user${Date.now()}@test.local`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 201', () => pm.response.to.have.status(201));",
+              "const u = pm.response.json();",
+              "pm.test('email matches', () => pm.expect(u.email).to.eql(pm.collectionVariables.get('email')));",
+              "pm.test('role is client', () => pm.expect(u.role).to.eql('client'));",
+              "pm.collectionVariables.set('userId', u.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Identity: вхід",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/identity/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "identity",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"{{email}}\", \"password\": \"Test-Pass-123\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('JWT has three parts', () => pm.expect(pm.response.json().token.split('.')).to.have.lengthOf(3));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking: створення бронювання",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/bookings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "bookings"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"car_id\": {{carId}}, \"user_id\": {{userId}}, \"start_at\": \"{{startAt}}\", \"end_at\": \"{{endAt}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// унікальний період у майбутньому для кожного запуску",
+              "const start = new Date(Date.now() + (30 + Math.floor(Math.random() * 300)) * 86400000);",
+              "const end = new Date(start.getTime() + 2 * 86400000);",
+              "pm.collectionVariables.set('startAt', start.toISOString());",
+              "pm.collectionVariables.set('endAt', end.toISOString());",
+              "pm.collectionVariables.set('overlapAt', new Date(start.getTime() + 86400000).toISOString());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 201', () => pm.response.to.have.status(201));",
+              "const b = pm.response.json();",
+              "pm.test('status pending_payment', () => pm.expect(b.status).to.eql('pending_payment'));",
+              "pm.collectionVariables.set('bookingId', b.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking: перетин періодів",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/bookings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "bookings"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"car_id\": {{carId}}, \"user_id\": {{userId}}, \"start_at\": \"{{overlapAt}}\", \"end_at\": \"{{endAt}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 409', () => pm.response.to.have.status(409));",
+              "pm.test('already booked message', () => pm.expect(pm.response.json().error).to.include('already booked'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking: некоректний запит",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/bookings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "bookings"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"car_id\": {{carId}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment: оплата бронювання",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/payments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "payments"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"booking_id\": {{bookingId}}, \"amount\": 2400}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 201', () => pm.response.to.have.status(201));",
+              "pm.test('status paid', () => pm.expect(pm.response.json().status).to.eql('paid'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking: список бронювань",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/bookings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "bookings"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const id = Number(pm.collectionVariables.get('bookingId'));",
+              "pm.test('created booking is listed', () => pm.expect(pm.response.json().map(b => b.id)).to.include(id));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

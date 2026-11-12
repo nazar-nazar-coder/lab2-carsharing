@@ -1,0 +1,26 @@
+name: Load tests (k6)
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"   # щопонеділка о 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start the platform (Docker Compose)
+        run: docker compose up -d --build --wait --wait-timeout 300
+
+      - name: Run k6 scenarios
+        run: >
+          docker run --rm -i --network host
+          -e BASE_URL=http://localhost:8080
+          -v "$PWD/tests/k6:/scripts"
+          grafana/k6 run /scripts/load.js
+
+      - name: Stop the platform
+        if: always()
+        run: docker compose down -v

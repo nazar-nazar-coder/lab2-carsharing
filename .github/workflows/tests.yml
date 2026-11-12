@@ -1,0 +1,50 @@
+name: API and E2E tests
+
+on:
+  push:
+    branches: [main, develop, lab5-tests]
+  pull_request:
+
+jobs:
+  api-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start the platform (Docker Compose)
+        run: docker compose up -d --build --wait --wait-timeout 300
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: API tests (Newman)
+        run: >
+          npx --yes newman run tests/newman/carsharing-api.postman_collection.json
+          --env-var baseUrl=http://localhost:8080
+          --reporters cli,junit
+          --reporter-junit-export newman-report.xml
+
+      - name: E2E tests (Cypress)
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: tests/cypress
+        env:
+          BASE_URL: http://localhost:8080
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            newman-report.xml
+            tests/cypress/cypress/screenshots
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --tail=100
+
+      - name: Stop the platform
+        if: always()
+        run: docker compose down -v
