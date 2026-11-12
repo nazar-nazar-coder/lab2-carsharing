@@ -1,0 +1,43 @@
+openapi: 3.0.3
+info:
+  title: Carsharing & Daily Rental API
+  version: 1.0.0
+paths:
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      responses:
+        "201":
+          description: User created
+  /api/auth/login:
+    post:
+      summary: Login user
+      responses:
+        "200":
+          description: JWT token returned
+  /api/cars:
+    get:
+      summary: List available cars with filters
+      responses:
+        "200":
+          description: Array of cars
+  /api/bookings:
+    post:
+      summary: Create a booking
+      responses:
+        "201":
+          description: Booking created
+        "409":
+          description: Booking period conflict
+  /api/bookings/{id}/cancel:
+    post:
+      summary: Cancel a booking
+      responses:
+        "200":
+          description: Booking cancelled
+  /api/payments:
+    post:
+      summary: Process rental payment
+      responses:
+        "200":
+          description: Payment confirmed

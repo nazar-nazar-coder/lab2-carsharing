@@ -4,6 +4,6 @@
   "private": true,
   "scripts": {
     "test": "node --test",
-    "lint": "node --check index.js"
+    "lint": "node --check index.js && node scripts/check-syntax.js"
   }
 }
