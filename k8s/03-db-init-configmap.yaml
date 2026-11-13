@@ -1,0 +1,71 @@
+apiVersion: v1
+data:
+  init.sql: |
+    -- Розширення: PostGIS (геозапити) та btree_gist (обмеження на перетин періодів)
+    CREATE EXTENSION IF NOT EXISTS postgis;
+    CREATE EXTENSION IF NOT EXISTS btree_gist;
+    -- Окрема схема для кожного мікросервісу
+    CREATE SCHEMA IF NOT EXISTS identity;
+    CREATE SCHEMA IF NOT EXISTS fleet;
+    CREATE SCHEMA IF NOT EXISTS booking;
+    CREATE SCHEMA IF NOT EXISTS payment;
+    CREATE TABLE IF NOT EXISTS identity.users (
+      id            SERIAL PRIMARY KEY,
+      email         VARCHAR(255) UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      role          VARCHAR(20) NOT NULL DEFAULT 'client'
+                    CHECK (role IN ('client', 'admin')),
+      created_at    TIMESTAMPTZ DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS fleet.cars (
+      id            SERIAL PRIMARY KEY,
+      brand         VARCHAR(50) NOT NULL,
+      model         VARCHAR(50) NOT NULL,
+      fuel_type     VARCHAR(20) NOT NULL
+                    CHECK (fuel_type IN ('petrol', 'diesel', 'electric')),
+      price_per_day NUMERIC(10, 2) NOT NULL,
+      status        VARCHAR(20) NOT NULL DEFAULT 'available'
+                    CHECK (status IN ('available', 'booked', 'rented', 'maintenance')),
+      location      GEOGRAPHY(Point, 4326) NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS cars_location_idx ON fleet.cars USING GIST (location);
+    CREATE TABLE IF NOT EXISTS booking.bookings (
+      id         SERIAL PRIMARY KEY,
+      car_id     INT NOT NULL,
+      user_id    INT NOT NULL,
+      start_at   TIMESTAMPTZ NOT NULL,
+      end_at     TIMESTAMPTZ NOT NULL,
+      status     VARCHAR(20) NOT NULL DEFAULT 'pending_payment'
+                 CHECK (status IN ('pending_payment', 'confirmed', 'active',
+                                   'completed', 'cancelled')),
+      created_at TIMESTAMPTZ DEFAULT now(),
+      CHECK (end_at > start_at),
+      -- заборона подвійного бронювання одного авто на періоди, що перетинаються
+      CONSTRAINT no_double_booking EXCLUDE USING gist (
+        car_id WITH =,
+        tstzrange(start_at, end_at) WITH &&
+      ) WHERE (status IN ('pending_payment', 'confirmed', 'active'))
+    );
+    CREATE TABLE IF NOT EXISTS payment.payments (
+      id         SERIAL PRIMARY KEY,
+      booking_id INT NOT NULL,
+      amount     NUMERIC(10, 2) NOT NULL,
+      status     VARCHAR(20) NOT NULL DEFAULT 'paid',
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+    -- Тестові дані
+    INSERT INTO identity.users (email, password_hash, role)
+    VALUES ('demo@carsharing.local', 'not-a-real-hash', 'client');
+    INSERT INTO fleet.cars (brand, model, fuel_type, price_per_day, location) VALUES
+      ('Toyota', 'Corolla', 'petrol', 1200,
+       ST_SetSRID(ST_MakePoint(30.5234, 50.4501), 4326)::geography),
+      ('Tesla', 'Model 3', 'electric', 2500,
+       ST_SetSRID(ST_MakePoint(30.5160, 50.4430), 4326)::geography),
+      ('Skoda', 'Octavia', 'diesel', 1400,
+       ST_SetSRID(ST_MakePoint(30.5400, 50.4600), 4326)::geography),
+      ('Renault', 'Zoe', 'electric', 1300,
+       ST_SetSRID(ST_MakePoint(30.6100, 50.4000), 4326)::geography);
+kind: ConfigMap
+metadata:
+  name: db-init
+  namespace: carsharing-gitops
